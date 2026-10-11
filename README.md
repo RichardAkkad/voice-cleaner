@@ -11,7 +11,7 @@ Upload a messy voice note and get a clean transcript. Everything runs locally, s
 #### Tech stack
 Python, FastAPI, faster-whisper, Ollama, Qwen 2.5, HTML/JavaScript
 
-## Requirements
+#### Requirements
 - Python 3.10 to 3.12 (3.15 is too new for some dependencies)
 - [Ollama](https://ollama.com) with the model pulled: `ollama pull qwen2.5:7b`
 
