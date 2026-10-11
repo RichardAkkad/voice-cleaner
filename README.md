@@ -8,7 +8,7 @@ Upload a messy voice note and get a clean transcript. Everything runs locally, s
 3. The transcript is sent to a local LLM (**Qwen 2.5 7B** via **Ollama**), which removes filler words, false starts and repetitions without changing the meaning.
 4. The page shows the raw transcript and the cleaned version side by side.
 
-## Tech stackd
+## Tech stack
 Python, FastAPI, faster-whisper, Ollama, Qwen 2.5, HTML/JavaScript
 
 ## Requirements
