@@ -26,5 +26,5 @@ Open http://127.0.0.1:8000 and upload a recording. The first run downloads the W
 - Whisper drops many "um"s on its own. An `initial_prompt` containing fillers is used to keep more of them in the raw transcript.
 - Long recordings can take a few minutes on CPU.
 
-  below is the output displayed
+  below is example of output displayed
 <img width="1059" height="772" alt="Screenshot 2026-10-11 132434" src="https://github.com/user-attachments/assets/de280131-3a1b-4a9d-a476-5db52d7655a1" />
