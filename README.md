@@ -2,8 +2,6 @@
 
 Upload a messy voice note and get a clean transcript. Everything runs locally, so no audio leaves your computer.
 
-![Screenshot](screenshot.png)
-
 ## How it works
 1. You upload an audio file (m4a, mp3, wav) in the web page.
 2. The FastAPI backend transcribes it with **faster-whisper**.
