@@ -1,0 +1,65 @@
+
+import os
+import tempfile
+
+import requests
+from fastapi import FastAPI, File, UploadFile
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from faster_whisper import WhisperModel
+
+OLLAMA_URL = "http://localhost:11434/api/generate"
+LLM_MODEL = "qwen2.5:7b"
+
+app = FastAPI()
+stt = WhisperModel("small", compute_type="int8")  # loaded once at startup
+
+PROMPT = """Clean up this voice note transcript. Remove filler words (um, uh, like),
+false starts and repetitions. Fix punctuation and paragraphs.
+Do NOT add, summarize or change the meaning. Output only the cleaned text.
+
+Transcript:
+"""
+
+
+def transcribe(path: str) -> str:
+       segments, _ = stt.transcribe(path,vad_filter=True,initial_prompt="Umm, let me think, like, hmm... okay, so, uh, basically, you know, er, I mean...",)
+       return " ".join(s.text.strip() for s in segments)
+
+
+def clean(text: str) -> str:
+    r = requests.post(
+        OLLAMA_URL,
+        json={
+            "model": LLM_MODEL,
+	    "prompt": PROMPT + text,
+            "stream": False,
+            "options": {"temperature": 0.2},
+        },
+        timeout=300,
+    )
+    r.raise_for_status()
+    return r.json()["response"].strip()
+
+
+@app.post("/api/process")
+async def process(file: UploadFile = File(...)):
+    suffix = os.path.splitext(file.filename or "")[1] or ".audio"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        tmp.write(await file.read())
+        path = tmp.name
+    try:
+        raw = transcribe(path)
+        if not raw.strip():
+            return {"raw": "", "clean": ""}
+        return {"raw": raw, "clean": clean(raw)}
+    finally:
+        os.remove(path)
+
+
+@app.get("/")
+def index():
+    return FileResponse("static/index.html")
+
+
+app.mount("/static", StaticFiles(directory="static"), name="static")

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voice note cleaner</title>
+<style>
+  :root { --bg:#f6f7f9; --card:#fff; --ink:#1c2430; --muted:#6b7686; --line:#d8dde5; --accent:#1f6feb; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#14181f; --card:#1c222b; --ink:#e8ecf2; --muted:#98a3b3; --line:#2d3643; --accent:#5b9bff; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 system-ui, sans-serif; }
+  main { max-width: 960px; margin: 0 auto; padding: 32px 20px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  p.sub { color: var(--muted); margin: 0 0 24px; }
+  #drop { border: 2px dashed var(--line); border-radius: 10px; padding: 32px; text-align: center;
+          background: var(--card); }
+  #drop.over { border-color: var(--accent); }
+  #drop:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  #status { margin: 14px 0; color: var(--muted); min-height: 1.5em; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+  .box h2 { font-size: 1rem; margin: 0 0 6px; display: flex; justify-content: space-between; align-items: center; }
+  textarea { width: 100%; min-height: 320px; padding: 12px; border: 1px solid var(--line); border-radius: 8px;
+             background: var(--card); color: var(--ink); font: inherit; resize: vertical; }
+  button { font: inherit; padding: 4px 10px; border: 1px solid var(--line); border-radius: 6px;
+           background: var(--card); color: var(--ink); cursor: pointer; }
+  button:focus-visible { outline: 2px solid var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Voice note cleaner</h1>
+  <p class="sub">Runs fully on your computer. Whisper transcribes, a local model tidies the text.</p>
+
+  <div id="drop">
+    <p>Choose an audio file, or drop it here</p>
+    <input id="file" type="file" accept="audio/*,video/*,.m4a,.mp3,.wav">
+  </div>
+  <div id="status" aria-live="polite"></div>
+
+  <div class="grid">
+    <div class="box">
+      <h2>Messy transcript</h2>
+      <textarea id="raw" readonly placeholder="Raw transcript appears here"></textarea>
+    </div>
+    <div class="box">
+      <h2>Clean version <button id="copy" type="button">Copy</button></h2>
+      <textarea id="clean" readonly placeholder="Cleaned text appears here"></textarea>
+    </div>
+  </div>
+</main>
+<script>
+  const drop = document.getElementById('drop'), input = document.getElementById('file');
+  const statusEl = document.getElementById('status');
+  const raw = document.getElementById('raw'), clean = document.getElementById('clean');
+
+  input.onchange = () => input.files[0] && send(input.files[0]);
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+  drop.ondragleave = () => drop.classList.remove('over');
+  drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over');
+                       e.dataTransfer.files[0] && send(e.dataTransfer.files[0]); };
+  document.getElementById('copy').onclick = () => navigator.clipboard.writeText(clean.value);
+
+  async function send(file) {
+    raw.value = clean.value = '';
+    statusEl.textContent = 'Processing ' + file.name + '. Long recordings can take a few minutes.';
+    const body = new FormData(); body.append('file', file);
+    try {
+      const res = await fetch('/api/process', { method: 'POST', body });
+      if (!res.ok) throw new Error('Server error ' + res.status + '. Is Ollama running?');
+      const data = await res.json();
+      raw.value = data.raw; clean.value = data.clean;
+      statusEl.textContent = data.raw ? 'Done.' : 'No speech found in this file.';
+    } catch (err) { statusEl.textContent = err.message; }
+  }
+</script>
+</body>
+</html>
